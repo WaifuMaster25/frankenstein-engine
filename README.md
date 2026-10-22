@@ -26,6 +26,10 @@ Please read [DISCLAIMER](DISCLAIMER) before commenting (TODO)
 - **PS2 Compile support**
 - **WII U Compile support**
 
+## Second disclaimer
+
+The project is on dev stage
+
 ## License
 
 This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) file for details.
