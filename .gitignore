@@ -1,12 +1,22 @@
+# Objetos y binarios
 *.o
 *.obj
 *.exe
-*.DS_Store
-*.log
-*.user
-*~
-.vs/
+doomgeneric.map
+
+# Carpetas de build
+build/
 Debug/
 Release/
-Build/
-doomgeneric.map
+.vs/
+
+# Datos propietarios / generados por el motor
+*.wad
+.default.cfg
+.savegame/
+
+# Editor y sistema
+*.user
+*.log
+*~
+.DS_Store

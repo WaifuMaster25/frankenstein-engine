@@ -75,6 +75,51 @@
 
 #define SAVEGAMESIZE	0x2c000
 
+// ---- Frankenstein: hash de estado para tests de regresión ----
+#include <stdint.h>
+
+extern int prndindex;                      // índice del RNG (m_random.c)
+static uint32_t fk_state_hash = 2166136261u;   // base de FNV-1a
+
+static void FK_HashInt(int v)
+{
+    uint32_t u = (uint32_t) v;
+    int i;
+    for (i = 0; i < 4; i++)
+    {
+        fk_state_hash ^= (u >> (i * 8)) & 0xff;   // mezcla un byte
+        fk_state_hash *= 16777619u;               // primo de FNV
+    }
+}
+
+static void FK_HashTic(void)
+{
+    player_t *p;
+
+    if (!demoplayback)
+        return;
+
+    FK_HashInt(gametic);
+    FK_HashInt(prndindex);
+
+    p = &players[consoleplayer];
+    if (playeringame[consoleplayer] && p->mo != NULL)
+    {
+        FK_HashInt(p->mo->x);
+        FK_HashInt(p->mo->y);
+        FK_HashInt(p->mo->z);
+        FK_HashInt(p->mo->angle);
+        FK_HashInt(p->mo->momx);
+        FK_HashInt(p->mo->momy);
+        FK_HashInt(p->health);
+    }
+
+    // Checkpoint cada 1000 tics, solo si pasas -hashlog
+    if (gametic % 1000 == 0 && M_CheckParm("-hashlog"))
+        printf("CHECKPOINT tic=%d hash=%08x\n", gametic, fk_state_hash);
+}
+// ---------------------------------------------------------------
+
 void	G_ReadDemoTiccmd (ticcmd_t* cmd); 
 void	G_WriteDemoTiccmd (ticcmd_t* cmd); 
 void	G_PlayerReborn (int player); 
@@ -897,9 +942,10 @@ void G_Ticker (void)
 	    gameaction = ga_nothing; 
 	    break; 
 	  case ga_nothing: 
-	    break; 
+	    break;
 	} 
-    }
+	FK_HashTic();
+}
     
     // get commands, check consistancy,
     // and build new consistancy check
@@ -2253,7 +2299,7 @@ boolean G_CheckDemoStatus (void)
     { 
         float fps;
         int realtics;
-
+		printf("STATEHASH %08x gametics=%d\n", fk_state_hash, gametic);
 	endtime = I_GetTime (); 
         realtics = endtime - starttime;
         fps = ((float) gametic * TICRATE) / realtics;
