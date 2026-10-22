@@ -15,6 +15,11 @@ Release/
 .default.cfg
 .savegame/
 
+# Salida del build web (doom.data lleva el WAD dentro)
+web/doom.js
+web/doom.wasm
+web/doom.data
+
 # Editor y sistema
 *.user
 *.log

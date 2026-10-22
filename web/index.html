@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Frankenstein Engine</title>
+  <style>
+    body { margin: 0; background: #111; display: grid; place-items: center; height: 100vh; }
+    canvas { width: min(100vw, 160vh); image-rendering: pixelated; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="640" height="400"></canvas>
+  <script>
+    var Module = {
+      arguments: ["-iwad", "/freedoom1.wad"],
+      print: console.log,
+      printErr: console.error
+    };
+  </script>
+  <script src="doom.js"></script>
+</body>
+</html>
