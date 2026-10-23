@@ -55,9 +55,10 @@
 #include <CoreFoundation/CFUserNotification.h>
 #endif
 
-#define DEFAULT_RAM 6 /* MiB */
-#define MIN_RAM     6  /* MiB */
+#include "fk_target.h"
 
+#define DEFAULT_RAM FK_ZONE_MB /* MiB */
+#define MIN_RAM FK_ZONE_MB /* MiB */
 
 typedef struct atexit_listentry_s atexit_listentry_t;
 

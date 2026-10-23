@@ -1,1 +1,3 @@
-STATEHASH 79613be4 gametics=7117
+demo1 STATEHASH 79613be4 gametics=7117
+demo2 STATEHASH e225f16d gametics=7089
+demo3 STATEHASH 352eae9d gametics=6042
