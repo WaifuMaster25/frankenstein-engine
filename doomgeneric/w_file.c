@@ -13,7 +13,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	WAD I/O functions.
+//      WAD I/O functions.
 //
 
 #include <stdio.h>
@@ -26,6 +26,7 @@
 #include "w_file.h"
 
 extern wad_file_class_t stdc_wad_file;
+extern wad_file_class_t memory_wad_file;   // Frankenstein: WADs en RAM
 
 /*
 #ifdef _WIN32
@@ -35,9 +36,9 @@ extern wad_file_class_t win32_wad_file;
 
 #ifdef HAVE_MMAP
 extern wad_file_class_t posix_wad_file;
-#endif 
+#endif
 
-static wad_file_class_t *wad_file_classes[] = 
+static wad_file_class_t *wad_file_classes[] =
 {
 /*
 #ifdef _WIN32
@@ -54,6 +55,26 @@ wad_file_t *W_OpenFile(char *path)
 {
     wad_file_t *result;
     int i;
+
+    // Frankenstein: primero, los WADs registrados en memoria.
+    // Si no hay ninguno registrado con este nombre, el comportamiento
+    // es exactamente el de siempre.
+
+    //!
+    // Carga cada archivo que se abra a RAM antes de leerlo (solo pruebas).
+    //
+
+    if (M_CheckParm("-memwad"))
+    {
+        W_MemoryAutoload(path);
+    }
+
+    result = memory_wad_file.OpenFile(path);
+
+    if (result != NULL)
+    {
+        return result;
+    }
 
     //!
     // Use the OS's virtual memory subsystem to map WAD files
@@ -92,4 +113,3 @@ size_t W_Read(wad_file_t *wad, unsigned int offset,
 {
     return wad->file_class->Read(wad, offset, buffer, buffer_len);
 }
-

@@ -16,7 +16,7 @@ $src = @(
  "p_switch","p_telept","p_tick","p_user","r_bsp","r_data","r_draw","r_main","r_plane",
  "r_segs","r_sky","r_things","sha1","sounds","statdump","st_lib","st_stuff","s_sound",
  "tables","v_video","wi_stuff","w_checksum","w_file","w_main","w_wad","z_zone",
- "w_file_stdc","i_input","i_video","doomgeneric","mus2mid","doomgeneric_web"
+ "w_file_stdc","w_file_memory","i_input","i_video","doomgeneric","mus2mid","doomgeneric_web"
 ) | ForEach-Object { "$_.c" }
 
 # Los -Wno-error evitan que el clang moderno rechace C antiguo (declaraciones implicitas, etc.)

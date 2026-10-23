@@ -13,7 +13,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	WAD I/O functions.
+//      WAD I/O functions.
 //
 
 
@@ -35,7 +35,7 @@ typedef struct
 
     void (*CloseFile)(wad_file_t *file);
 
-    // Read data from the specified position in the file into the 
+    // Read data from the specified position in the file into the
     // provided buffer.  Returns the number of bytes read.
 
     size_t (*Read)(wad_file_t *file, unsigned int offset,
@@ -59,7 +59,7 @@ struct _wad_file_s
     unsigned int length;
 };
 
-// Open the specified file. Returns a pointer to a new wad_file_t 
+// Open the specified file. Returns a pointer to a new wad_file_t
 // handle for the WAD file, or NULL if it could not be opened.
 
 wad_file_t *W_OpenFile(char *path);
@@ -74,5 +74,17 @@ void W_CloseFile(wad_file_t *wad);
 
 size_t W_Read(wad_file_t *wad, unsigned int offset,
               void *buffer, size_t buffer_len);
+
+// ---- Frankenstein: WADs en memoria (w_file_memory.c) ----
+
+// Registra un bloque de memoria como si fuera el archivo "name".
+// No se copia ni se libera: los datos deben vivir mientras se use el WAD.
+
+void W_RegisterMemoryFile(const char *name, byte *data, unsigned int length);
+
+// Gancho de pruebas (parametro -memwad): carga el archivo de disco a RAM
+// y lo registra, para ejercitar la ruta de memoria.
+
+void W_MemoryAutoload(const char *path);
 
 #endif /* #ifndef __W_FILE__ */
