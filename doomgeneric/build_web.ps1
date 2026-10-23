@@ -1,8 +1,9 @@
 # Frankenstein Engine - build web (Emscripten)
-# Antes, en la misma ventana:  ..\..\emsdk\emsdk_env.ps1
+# Antes, en la misma ventana:  C:\Users\Chelo\Documents\Proyectos\emsdk\emsdk_env.ps1
 # Ejecutar desde la carpeta doomgeneric\ del repo.
+#
+# Ya NO empaqueta ningun WAD: la pagina lo recibe del usuario (arrastrar y soltar).
 
-$wad = "C:\Users\Chelo\Documents\Proyectos\freedoom1.wad"
 $out = "..\web"
 New-Item -ItemType Directory -Force $out | Out-Null
 
@@ -20,11 +21,12 @@ $src = @(
 ) | ForEach-Object { "$_.c" }
 
 # Los -Wno-error evitan que el clang moderno rechace C antiguo (declaraciones implicitas, etc.)
+# EXPORTED_RUNTIME_METHODS: ccall para llamar a fk_alloc/fk_start y HEAPU8 para copiar el WAD.
 emcc @src -O2 `
   -Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types `
   -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=64MB `
-  --preload-file "$wad@/freedoom1.wad" `
+  "-sEXPORTED_RUNTIME_METHODS=ccall,HEAPU8" `
   -o "$out\doom.js"
 
-if ($LASTEXITCODE -eq 0) { Write-Host "OK: generado $out\doom.js / doom.wasm / doom.data" }
+if ($LASTEXITCODE -eq 0) { Write-Host "OK: generado $out\doom.js y doom.wasm (sin WAD dentro)" }
 else { Write-Host "FALLO en la compilacion" }

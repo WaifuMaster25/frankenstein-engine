@@ -6,8 +6,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <string.h>
+
 #include "doomgeneric.h"
 #include "doomkeys.h"
+#include "w_file.h"        // W_RegisterMemoryFile
 
 // ---- Cola de teclas: el navegador las empuja, Doom las consume ----
 #define KEYQ_SIZE 64
@@ -123,9 +126,43 @@ void DG_SetWindowTitle(const char *title)
 // ---- Bucle principal: el navegador nos llama en cada frame ----
 static void Frame(void) { doomgeneric_Tick(); }
 
-int main(int argc, char **argv)
+// ---- Arranque diferido: JavaScript entrega el WAD y luego arranca ----
+
+// Reserva un bloque en el heap de WASM para que JS copie ahi el WAD.
+// OJO: el bloque NO se libera nunca; el motor lo lee en vivo mientras dure
+// la partida (W_RegisterMemoryFile no copia los datos).
+EMSCRIPTEN_KEEPALIVE
+uint8_t *fk_alloc(unsigned int size)
 {
-    doomgeneric_Create(argc, argv);
-    emscripten_set_main_loop(Frame, 0, 1);   // 0 = sincronizado con el monitor
+    return (uint8_t *) malloc(size);
+}
+
+// Registra el WAD como archivo en memoria con el nombre "name" y arranca
+// el motor. El nombre importa: Doom identifica el IWAD por su nombre
+// (freedoom1.wad, doom1.wad, doom2.wad...).
+EMSCRIPTEN_KEEPALIVE
+int fk_start(const char *name, uint8_t *data, unsigned int size)
+{
+    static int started = 0;
+    static char *args[4];
+
+    if (started) return 0;
+    started = 1;
+
+    W_RegisterMemoryFile(name, data, size);   // copia el nombre, no los datos
+
+    args[0] = "doom";
+    args[1] = "-iwad";
+    args[2] = strdup(name);                   // Doom conserva este puntero
+    args[3] = NULL;
+
+    doomgeneric_Create(3, args);
+    emscripten_set_main_loop(Frame, 0, 0);    // 0 = no bloquear (volvemos a JS)
+    return 1;
+}
+
+// main ya no arranca nada: espera a que JS llame a fk_start.
+int main(void)
+{
     return 0;
 }

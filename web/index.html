@@ -2,20 +2,102 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Frankenstein Engine</title>
   <style>
-    body { margin: 0; background: #111; display: grid; place-items: center; height: 100vh; }
-    canvas { width: min(100vw, 160vh); image-rendering: pixelated; }
+    html, body { margin: 0; height: 100%; background: #111; color: #ddd;
+                 font-family: system-ui, sans-serif; }
+    body { display: grid; place-items: center; }
+    #stage { position: relative; width: min(100vw, 160vh); }
+    canvas { width: 100%; display: block; background: #000; image-rendering: pixelated; }
+
+    #drop { position: absolute; inset: 0; display: grid; place-items: center;
+            text-align: center; padding: 24px; box-sizing: border-box;
+            border: 3px dashed #555; background: rgba(17,17,17,.92); cursor: pointer; }
+    #drop.over { border-color: #e0a030; background: rgba(40,30,10,.95); }
+    #drop h1 { margin: 0 0 8px; font-size: 1.4rem; }
+    #drop p  { margin: 4px 0; color: #aaa; }
+    #status  { margin-top: 12px; color: #e0a030; min-height: 1.2em; }
+    #drop.hidden { display: none; }
+    input[type=file] { display: none; }
   </style>
 </head>
 <body>
-  <canvas id="canvas" width="640" height="400"></canvas>
+  <div id="stage">
+    <canvas id="canvas" width="640" height="400"></canvas>
+
+    <div id="drop">
+      <div>
+        <h1>Frankenstein Engine</h1>
+        <p>Arrastra aqui un IWAD (por ejemplo <b>freedoom1.wad</b>)<br>o haz clic para elegirlo.</p>
+        <p>El archivo se procesa en tu navegador: no se sube a ningun servidor.</p>
+        <div id="status">Cargando el motor...</div>
+        <input id="file" type="file" accept=".wad">
+      </div>
+    </div>
+  </div>
+
   <script>
+    var ready = false;
+    var started = false;
+    var statusEl = document.getElementById('status');
+    var dropEl = document.getElementById('drop');
+    var fileEl = document.getElementById('file');
+
+    function setStatus(t) { statusEl.textContent = t; }
+
     var Module = {
-      arguments: ["-iwad", "/freedoom1.wad"],
       print: console.log,
-      printErr: console.error
+      printErr: console.error,
+      onRuntimeInitialized: function () {
+        ready = true;
+        setStatus('Motor listo. Falta el WAD.');
+      }
     };
+
+    async function startWith(file) {
+      if (!ready) { setStatus('El motor aun esta cargando, espera un momento.'); return; }
+      if (started) return;
+      started = true;
+
+      try {
+        setStatus('Leyendo ' + file.name + ' (' + (file.size / 1048576).toFixed(1) + ' MB)...');
+        var buf = new Uint8Array(await file.arrayBuffer());
+
+        // Reservar en el heap de WASM y copiar. HEAPU8 se vuelve a leer DESPUES
+        // de reservar, porque el heap puede haber crecido y cambiado de buffer.
+        var ptr = Module.ccall('fk_alloc', 'number', ['number'], [buf.length]);
+        Module.HEAPU8.set(buf, ptr);
+
+        dropEl.classList.add('hidden');
+        Module.ccall('fk_start', 'number', ['string', 'number', 'number'],
+                     [file.name, ptr, buf.length]);
+      } catch (e) {
+        started = false;
+        dropEl.classList.remove('hidden');
+        setStatus('Error: ' + e);
+        console.error(e);
+      }
+    }
+
+    dropEl.addEventListener('click', function () { fileEl.click(); });
+    fileEl.addEventListener('change', function () {
+      if (fileEl.files.length) startWith(fileEl.files[0]);
+    });
+
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      dropEl.addEventListener(ev, function (e) {
+        e.preventDefault(); dropEl.classList.add('over');
+      });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      dropEl.addEventListener(ev, function (e) {
+        e.preventDefault(); dropEl.classList.remove('over');
+      });
+    });
+    dropEl.addEventListener('drop', function (e) {
+      if (e.dataTransfer.files.length) startWith(e.dataTransfer.files[0]);
+    });
   </script>
   <script src="doom.js"></script>
 </body>
