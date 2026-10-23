@@ -87,4 +87,9 @@ void W_RegisterMemoryFile(const char *name, byte *data, unsigned int length);
 
 void W_MemoryAutoload(const char *path);
 
+// Devuelve distinto de cero si "name" esta registrado como archivo en
+// memoria. Lo usa d_iwad.c en lugar de M_FileExists para esos casos.
+
+int W_MemoryFileExists(const char *name);
+
 #endif /* #ifndef __W_FILE__ */

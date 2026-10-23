@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "doomtype.h"
+#include "m_argv.h"
 #include "w_file.h"
 #include "z_zone.h"
 
@@ -35,9 +36,17 @@ typedef struct
 
 extern wad_file_class_t memory_wad_file;
 
+// ---------------------------------------------------------------------
+// Registro
+// ---------------------------------------------------------------------
+
+static void LazyInit(void);
+
 static memory_entry_t *FindEntry(const char *name)
 {
     int i;
+
+    LazyInit();
 
     for (i = 0; i < num_entries; ++i)
     {
@@ -76,25 +85,29 @@ void W_RegisterMemoryFile(const char *name, byte *data, unsigned int length)
     e->length = length;
 }
 
-// Gancho de pruebas (-memwad): lee el archivo de disco a un buffer y lo
-// registra, para ejercitar la ruta de memoria sin necesidad de un cargador.
+int W_MemoryFileExists(const char *name)
+{
+    return FindEntry(name) != NULL;
+}
 
-void W_MemoryAutoload(const char *path)
+// ---------------------------------------------------------------------
+// Ganchos de pruebas (solo para validar la ruta de memoria)
+// ---------------------------------------------------------------------
+
+// Lee "diskpath" de disco a un buffer y lo registra con el nombre "regname".
+
+static int LoadFromDisk(const char *diskpath, const char *regname)
 {
     FILE *f;
     byte *buf;
     long len;
 
-    if (FindEntry(path) != NULL)
-    {
-        return;
-    }
-
-    f = fopen(path, "rb");
+    f = fopen(diskpath, "rb");
 
     if (f == NULL)
     {
-        return;
+        printf("W_Memory: no se pudo abrir %s\n", diskpath);
+        return 0;
     }
 
     fseek(f, 0, SEEK_END);
@@ -107,14 +120,59 @@ void W_MemoryAutoload(const char *path)
     {
         free(buf);
         fclose(f);
-        return;
+        return 0;
     }
 
     fclose(f);
 
-    W_RegisterMemoryFile(path, buf, (unsigned int) len);
-    printf("W_Memory: %s cargado en memoria (%ld bytes)\n", path, len);
+    W_RegisterMemoryFile(regname, buf, (unsigned int) len);
+    printf("W_Memory: %s cargado en memoria como %s (%ld bytes)\n",
+           diskpath, regname, len);
+
+    return 1;
 }
+
+// -memwadfrom <archivo>: carga <archivo> a RAM y lo registra con el nombre
+// que se paso en -iwad. Asi se puede pedir un IWAD cuya ruta NO existe
+// en disco. Se ejecuta una sola vez, la primera vez que se consulta el
+// registro (mucho antes de que d_iwad.c busque el WAD).
+
+static void LazyInit(void)
+{
+    static int done = 0;
+    int from, iwad;
+
+    if (done)
+    {
+        return;
+    }
+
+    done = 1;
+
+    from = M_CheckParmWithArgs("-memwadfrom", 1);
+    iwad = M_CheckParmWithArgs("-iwad", 1);
+
+    if (from > 0 && iwad > 0)
+    {
+        LoadFromDisk(myargv[from + 1], myargv[iwad + 1]);
+    }
+}
+
+// -memwad: carga a RAM cada archivo que se abra, con su mismo nombre.
+
+void W_MemoryAutoload(const char *path)
+{
+    if (FindEntry(path) != NULL)
+    {
+        return;
+    }
+
+    LoadFromDisk(path, path);
+}
+
+// ---------------------------------------------------------------------
+// Clase de archivo
+// ---------------------------------------------------------------------
 
 static wad_file_t *W_Memory_OpenFile(char *path)
 {

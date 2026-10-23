@@ -31,6 +31,7 @@
 #include "m_misc.h"
 #include "w_wad.h"
 #include "z_zone.h"
+#include "w_file.h"
 
 static const iwad_t iwads[] =
 {
@@ -632,7 +633,7 @@ char *D_FindWADByName(char *name)
     
     // Absolute path?
 
-    if (M_FileExists(name))
+    if (W_MemoryFileExists(name) || M_FileExists(name))
     {
         return name;
     }
